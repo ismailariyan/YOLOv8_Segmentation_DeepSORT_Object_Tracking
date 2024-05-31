@@ -3,6 +3,7 @@
 import hydra
 import torch
 
+
 from ultralytics.yolo.utils import DEFAULT_CONFIG, ROOT, ops
 from ultralytics.yolo.utils.checks import check_imgsz
 from ultralytics.yolo.utils.plotting import colors, save_one_box
@@ -18,6 +19,21 @@ from deep_sort_pytorch.deep_sort import DeepSort
 #at the same time
 from collections import deque
 import numpy as np
+import math
+
+
+count_down=0
+count_up=0
+object_counter={}
+object_counter1={}
+speed_line_queue={}
+
+
+line=[(170,495),(1050,500)]
+
+
+
+
 palette = (2 ** 11 - 1, 2 ** 15 - 1, 2 ** 20 - 1)
 data_deque = {}
 
@@ -34,6 +50,10 @@ def init_tracker():
                             max_age=cfg_deep.DEEPSORT.MAX_AGE, n_init=cfg_deep.DEEPSORT.N_INIT, nn_budget=cfg_deep.DEEPSORT.NN_BUDGET,
                             use_cuda=True)
 ##########################################################################################
+
+
+
+
 def xyxy_to_xywh(*xyxy):
     """" Calculates the relative bounding box from absolute pixel values. """
     bbox_left = min([xyxy[0].item(), xyxy[2].item()])
@@ -76,6 +96,8 @@ def compute_color_for_labels(label):
 
 
 
+
+
 def UI_box(x, img, color=None, label=None, line_thickness=None):
     # Plots one bounding box on image img
     tl = line_thickness or round(0.002 * (img.shape[0] + img.shape[1]) / 2) + 1  # line/font thickness
@@ -90,10 +112,31 @@ def UI_box(x, img, color=None, label=None, line_thickness=None):
 
         cv2.putText(img, label, (c1[0], c1[1] - 2), 0, tl / 3, [225, 255, 255], thickness=tf, lineType=cv2.LINE_AA)
 
+def estimatespeed(location1, location2):
+    d_pixel=math.sqrt(math.pow(location2[0]-location1[0],2)+math.pow(location2[1]-location1[1],2))
+    ppm=8
+    d_meters=d_pixel/ppm
+    time_constant=15*3.6
+    speed=d_meters*time_constant
+    return int(speed)
+def intersect(A,B,C,D):
+    return ccw(A,C,D)!=ccw(B,C,D) and ccw(A,B,C)!=ccw(A,B,D)
+def ccw(A,B,C):
+    return ((C[1]-A[1]))*(B[0]-A[0])>(B[1]-A[1])*(C[0]-A[0])
 
-
+def get_direction(point1,point2):
+    direction_str=""
+    if point1[1]>point2[1]:
+        direction_str+="South"
+    elif point1[1]<point2[1]:
+        direction_str += "North"
+    else:
+        direction_str+=""
+    return direction_str
 def draw_boxes(img, bbox, names,object_id, identities=None, offset=(0, 0)):
-    #cv2.line(img, line[0], line[1], (46,162,112), 3)
+    cv2.line(img, line[0], line[1], (46,162,112), 3)
+    global count_down
+    global count_up
 
     height, width, _ = img.shape
     # remove tracked point from buffer if object is lost
@@ -117,12 +160,49 @@ def draw_boxes(img, bbox, names,object_id, identities=None, offset=(0, 0)):
         # create new buffer for new object
         if id not in data_deque:  
           data_deque[id] = deque(maxlen= 64)
+          speed_line_queue[id] = []
+
         color = compute_color_for_labels(object_id[i])
         obj_name = names[object_id[i]]
         label = '{}{:d}'.format("", id) + ":"+ '%s' % (obj_name)
 
         # add center to buffer
         data_deque[id].appendleft(center)
+
+
+        if len(data_deque[id]) >= 2:
+            direction = get_direction(data_deque[id][0], data_deque[id][1])
+            object_speed = estimatespeed(data_deque[id][1], data_deque[id][0])
+            speed_line_queue[id].append(object_speed)
+            if intersect(data_deque[id][0],data_deque[id][1],line[0],line[1]):
+                cv2.line(img,line[0],line[1],(255,255,255),3)
+                if "South" in direction:
+                    if obj_name not in object_counter:
+                        object_counter[obj_name]=1
+                        count_down +=1
+
+
+
+
+                    else:
+                        object_counter[obj_name] += 1
+                        count_down += 1
+
+                if "North" in direction:
+                    if obj_name not in object_counter1:
+                        object_counter1[obj_name]=1
+                        count_up+=1
+                    else:
+
+                        object_counter1[obj_name] += 1
+                        count_up += 1
+
+            try:
+                label=label+" "+str(sum(speed_line_queue[id])//len(speed_line_queue[id]))+"km/hour"
+            except:
+                pass
+
+
         UI_box(box, img, label=label, color=color, line_thickness=2)
         # draw trail
         for i in range(1, len(data_deque[id])):
@@ -133,6 +213,30 @@ def draw_boxes(img, bbox, names,object_id, identities=None, offset=(0, 0)):
             thickness = int(np.sqrt(64 / float(i + i)) * 1.5)
             # draw trails
             cv2.line(img, data_deque[id][i - 1], data_deque[id][i], color, thickness)
+    for idx, (key, value) in enumerate(object_counter1.items()):
+        cnt_str = str(key) + ":" + str(value)
+        # cars entering
+        # cv2.line(img,(width-500,25),(width,25),[85,45,255],40)
+        cv2.putText(img, f'Count of Vechines entering', (width - 500, 35), 0, 1, [255, 0, 0], thickness=2,
+                    lineType=cv2.LINE_AA)
+        ###
+        cv2.putText(img, "Total Count: " + str(count_up), (width - 300, 75), 0, 1, [255, 0, 0], thickness=2,
+                    lineType=cv2.LINE_AA)
+
+        ###
+        # cv2.line(img,(width-150,95+(idx*40))),(width,95+(idx*40)),[85,45,255],30)
+        cv2.putText(img, cnt_str, (width - 200, 105 + (idx * 40)), 0, 1, [255, 0, 0], thickness=2, lineType=cv2.LINE_AA)
+
+    for idx, (key, value) in enumerate(object_counter.items()):
+            cnt_str1 = str(key) + ":" + str(value)
+            # cars leaving
+
+            cv2.putText(img, f'Count of Vechines Leaving', (11, 35), 0, 1, [255, 0, 0], thickness=2,
+                        lineType=cv2.LINE_AA)
+            cv2.putText(img, "Total Count:" +str(count_down), (11, 75), 0, 1, [255, 0, 0], thickness=2,
+                        lineType=cv2.LINE_AA)
+
+            cv2.putText(img, cnt_str1, (11, 105 + (idx * 40)), 0, 1, [255, 0, 0], thickness=2, lineType=cv2.LINE_AA)
     return img
 
 
