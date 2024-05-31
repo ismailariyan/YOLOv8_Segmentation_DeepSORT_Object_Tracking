@@ -1,4 +1,4 @@
-path: ../datasets/roboflow
+path: /content/YOLOv8_Segmentation_DeepSORT_Object_Tracking/ultralytics/yolo/v8/segment/Drone-Traffic-1
 
 train: train/images
 val: valid/images
