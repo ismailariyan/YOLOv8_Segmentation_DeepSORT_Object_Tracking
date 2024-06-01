@@ -4,19 +4,17 @@ import subprocess
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads/'
-PROCESSED_FOLDER = 'processed/'
+PROCESSED_FOLDER = 'D:/BasicProjects/YOLOv8_Segmentation_DeepSORT_Object_Tracking/runs/detect/train'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['PROCESSED_FOLDER'] = PROCESSED_FOLDER
 
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
-if not os.path.exists(PROCESSED_FOLDER):
-    os.makedirs(PROCESSED_FOLDER)
-
 @app.route('/')
 def upload_form():
-    return render_template('upload.html')
+    filename = request.args.get('filename')
+    return render_template('upload.html', filename=filename)
 
 @app.route('/upload', methods=['POST'])
 def upload_video():
@@ -30,20 +28,16 @@ def upload_video():
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
         process_video(filepath, filename)
-        return redirect(url_for('uploaded_file', filename=filename))
+        return redirect(url_for('upload_form', filename=filename))
     return
 
 def process_video(filepath, filename):
-    output_path = os.path.join(app.config['PROCESSED_FOLDER'], filename)
     command = f'python predict.py source="{filepath}"'
     subprocess.run(command, shell=True)
-    # Assuming predict.py saves the processed video in a folder named 'runs'
-    processed_file_path = f'runs/{os.path.splitext(filename)[0]}.mp4'
-    os.rename(processed_file_path, output_path)
 
-@app.route('/uploads/<filename>')
-def uploaded_file(filename):
-    return send_from_directory(app.config['PROCESSED_FOLDER'], filename)
+@app.route('/download/<filename>')
+def download_file(filename):
+    return send_from_directory(app.config['PROCESSED_FOLDER'], filename, as_attachment=True, download_name='processed-video.mp4')
 
 if __name__ == "__main__":
     app.run(debug=True)
