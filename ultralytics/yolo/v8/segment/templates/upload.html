@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Upload Video</title>
+    <style>
+      #loading {
+        display: none;
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 24px;
+        color: #333;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>Upload a Video to Process</h2>
+      <form id="uploadForm" method="post" action="/upload" enctype="multipart/form-data">
+        <div class="form-group">
+          <label for="file">Choose Video</label>
+          <input type="file" class="form-control" name="file" id="file" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Upload</button>
+      </form>
+    </div>
+    <div id="loading">Processing your video, please wait...</div>
+
+    <script>
+      document.getElementById('uploadForm').onsubmit = function() {
+        document.getElementById('loading').style.display = 'block';
+      };
+    </script>
+  </body>
+</html>
