@@ -1,4 +1,4 @@
-from flask import Flask, request, redirect, url_for, render_template, send_from_directory
+from flask import Flask, request, redirect, url_for, render_template, send_from_directory, jsonify
 import os
 import subprocess
 
@@ -19,17 +19,17 @@ def upload_form():
 @app.route('/upload', methods=['POST'])
 def upload_video():
     if 'file' not in request.files:
-        return redirect(request.url)
+        return jsonify({'error': 'No file part'}), 400
     file = request.files['file']
     if file.filename == '':
-        return redirect(request.url)
+        return jsonify({'error': 'No selected file'}), 400
     if file:
         filename = file.filename
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
         process_video(filepath, filename)
-        return redirect(url_for('upload_form', filename=filename))
-    return
+        return jsonify({'filename': filename})
+    return jsonify({'error': 'File upload failed'}), 500
 
 def process_video(filepath, filename):
     command = f'python predict.py source="{filepath}"'

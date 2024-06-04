@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,7 +7,6 @@
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     <link rel="stylesheet" href="../static/assets/css/style.css">
 </head>
-
 <body>
     <header class="header">
         <a href="#home" class="logo">VELOCITY</a>
@@ -34,7 +32,7 @@
 
     <section style="display: flex; justify-content: center; align-items: center; height: 100vh;">
         <div class="container" style="text-align: center; padding: 100px; background-color: black; border-radius: 10px;">
-            <h2 class="heading" style="color: white;">Getting<span>Started</span></h2>
+            <h2 class="heading" style="color: white;">Get <span>Started</span></h2>
             <h2 style="margin-bottom: 20px; color: white;">Choose a file and click upload</h2>
             <form id="uploadForm" method="post" action="/upload" enctype="multipart/form-data">
                 <div class="form-group" style="margin-bottom: 20px;">
@@ -46,11 +44,9 @@
             </form>
             <div id="loading" style="margin-top: 20px; display: none; color: white;">Processing your video, please wait...</div>
             <div id="videoContainer" style="margin-top: 20px;">
-                {% if filename %}
-                <a href="{{ url_for('download_file', filename=filename) }}" class="btn btn-success" style="background-color: #28a745; border: none; padding: 10px 20px; border-radius: 5px; color: white; cursor: pointer; transition: background-color 0.3s;">
+                <a href="#" id="downloadLink" class="btn btn-success" style="background-color: #28a745; border: none; padding: 10px 20px; border-radius: 5px; color: white; cursor: pointer; transition: background-color 0.3s; display: none;">
                     Download Processed Video
                 </a>
-                {% endif %}
             </div>
         </div>
     </section>
@@ -59,9 +55,9 @@
         <h2 class="heading">Provided<span> Features</span></h2>
         <div class="slider-wrapper">
             <div class="slider">
-                <img id="slide-1" src="../static/assets/image/speedlimit.jpg" alt="">
-                <img id="slide-2" src="../static/assets/image/camera.jpg" alt="">
-                <img id="slide-3" src="../static/assets/image/count.jpg" alt="">
+                <img id="slide-1" src="../static/assets/image/estimation.png" alt="">
+                <img id="slide-2" src="../static/assets/image/category.png" alt="">
+                <img id="slide-3" src="../static/assets/image/counting.png" alt="">
             </div>
             <div class="slider-nav">
                 <a href="#slide-1"></a>
@@ -98,10 +94,26 @@
     <script src="../static/assets/js/javascript.js"></script>
 
     <script>
-        document.getElementById('uploadForm').addEventListener('submit', function() {
+        document.getElementById('uploadForm').addEventListener('submit', function(event) {
+            event.preventDefault();
             document.getElementById('loading').style.display = 'block';
+            var formData = new FormData(this);
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            }).then(response => response.json())
+            .then(data => {
+                console.log(data); // Debugging line to check the response data
+                document.getElementById('loading').style.display = 'none';
+                if (data.filename) {
+                    var downloadLink = document.getElementById('downloadLink');
+                    downloadLink.href = `/download/${data.filename}`;
+                    downloadLink.style.display = 'block';
+                }
+            }).catch(error => {
+                console.error('Error:', error); // Debugging line to check for errors
+            });
         });
     </script>
 </body>
-
 </html>

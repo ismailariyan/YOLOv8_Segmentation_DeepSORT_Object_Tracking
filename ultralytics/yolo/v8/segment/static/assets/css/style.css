@@ -82,7 +82,7 @@ section {
 }
 
 .home-img img {
-    width: 43vw;
+    width: 70vw;
     margin-left: 50px;
     border-radius: 10px;
     animation: floatImage 4s ease-in-out infinite;
