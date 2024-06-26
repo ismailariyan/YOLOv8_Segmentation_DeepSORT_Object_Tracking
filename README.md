@@ -70,5 +70,5 @@ The frontend was built using the Flask framework. Here is a brief overview of th
 
 ## 🎥 Demo Video
 
-[![Demo Video](runs\detect\train\final.gif)]
+![Demo Video](https://github.com/ismailariyan/vehicle-overspeeding-detection-flaskapp/blob/0692dff29e955fee37e4d2a241093779b133e755/runs/detect/train/final.gif)
 
